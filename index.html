@@ -1,0 +1,998 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#4a0812">
+<title>雙11 幸運拉霸</title>
+<style>
+:root{--gold:#f7c948;--gold2:#ffe9a3;--line:rgba(247,201,72,.35);--card:rgba(255,255,255,.06);--row:74px}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0;min-height:100%}
+body{background:radial-gradient(120% 80% at 50% 0%,#8a1020 0%,#4a0812 45%,#1e0307 100%) fixed #1e0307;color:#fff6e0;font-family:-apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif;-webkit-tap-highlight-color:transparent}
+#app{max-width:520px;margin:0 auto;padding:14px 14px 48px}
+header{text-align:center;position:relative;padding:8px 0 2px}
+.eyebrow{font-size:13px;letter-spacing:6px;color:#ffcf6b;opacity:.85}
+h1{font-size:36px;margin:2px 0 0;letter-spacing:2px;font-weight:900;background:linear-gradient(180deg,#fff7d1,#f7c948 55%,#d18b12);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 2px 0 #7a0a14) drop-shadow(0 0 14px rgba(247,201,72,.35));user-select:none;-webkit-user-select:none;touch-action:manipulation;cursor:default}
+.sub{color:#ffd98a;font-size:14px;margin-top:4px}
+#soundBtn{position:absolute;right:0;top:6px;width:40px;height:40px;border-radius:50%;border:1px solid var(--line);background:rgba(0,0,0,.3);color:#fff;font-size:18px}
+.bar{border-radius:12px;padding:10px 12px;margin:10px 0;font-size:13px;line-height:1.5}
+.bar.demo{background:#3b2a00;border:1px dashed var(--gold);color:#ffe7a6}
+.bar.err{background:#4d0000;border:1px solid #ff6b6b}
+.status{text-align:center;padding:12px;border-radius:16px;background:rgba(0,0,0,.28);border:1px solid var(--line);margin:12px 0}
+.status .cd{font-size:34px;font-weight:900;color:var(--gold);font-variant-numeric:tabular-nums;letter-spacing:2px}
+.status .st{font-size:15px;color:#ffe9b8}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px 14px;margin:12px 0}
+.card-h{display:flex;justify-content:space-between;align-items:center;font-weight:800;color:var(--gold2);margin-bottom:8px;font-size:15px}
+.card-h small{font-weight:400;color:#ffd98a;opacity:.8}
+.queue{display:flex;flex-wrap:wrap;gap:6px;max-height:118px;overflow-y:auto}
+.queue .empty{font-size:13px;opacity:.6}
+.chip{display:inline-flex;align-items:center;gap:5px;background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.14);border-radius:999px;padding:3px 10px 3px 3px;font-size:14px;font-variant-numeric:tabular-nums}
+.chip b{background:var(--gold);color:#5a0710;border-radius:999px;min-width:24px;height:24px;display:inline-grid;place-items:center;font-size:12px;padding:0 6px}
+.chip.cur{border-color:var(--gold);box-shadow:0 0 10px rgba(247,201,72,.55);animation:pulse 1.1s infinite}
+.chip.me{background:rgba(127,227,255,.22);border-color:#7fe3ff}
+.chip .tag{font-size:11px;color:var(--gold2)}
+.machine{position:relative;margin:16px 0;padding:14px 14px 18px;border-radius:26px;background:linear-gradient(180deg,#c3162a,#6d0913);border:3px solid var(--gold);box-shadow:0 0 0 4px #5a0710,0 0 34px rgba(247,201,72,.25),inset 0 2px 0 rgba(255,255,255,.25)}
+.bulbs{height:12px;margin:0 6px;background:radial-gradient(circle,#fff3b0 0 3px,rgba(255,243,176,.15) 4px,transparent 5px) 0 0/18px 12px repeat-x;animation:chase 1s steps(2) infinite}
+.bulbs.b{margin-top:10px}
+.now-turn{text-align:center;font-weight:800;font-size:17px;min-height:26px;color:#fff3c4;margin-top:6px}
+.reels{position:relative;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;background:#2a0408;padding:8px;border-radius:14px;border:2px solid #e0a82e;margin:10px 0 6px}
+.reel{height:calc(var(--row)*3);overflow:hidden;border-radius:10px;background:linear-gradient(180deg,#cfc6b4 0%,#fffdf6 32%,#fffdf6 68%,#cfc6b4 100%);position:relative}
+.reel::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.5),transparent 30%,transparent 70%,rgba(0,0,0,.5));pointer-events:none}
+.strip{will-change:transform}
+.reel.spin .strip{filter:blur(1.2px)}
+.sym{height:var(--row);display:grid;place-items:center;font-size:46px;line-height:1}
+.payline{position:absolute;left:4px;right:4px;top:50%;height:calc(var(--row) + 4px);transform:translateY(-50%);border-top:3px solid rgba(247,201,72,.95);border-bottom:3px solid rgba(247,201,72,.95);pointer-events:none;border-radius:6px}
+.reels.win .payline{animation:blink .22s 10;box-shadow:0 0 18px rgba(247,201,72,.9)}
+.turn-hint{text-align:center;font-size:14px;color:#ffd98a;min-height:20px}
+.flash{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,.82);border:2px solid var(--gold);color:#fff3c4;padding:10px 18px;border-radius:999px;font-weight:800;font-size:16px;white-space:nowrap;z-index:5;animation:pop .4s cubic-bezier(.2,1.6,.4,1)}
+.pull{display:block;width:100%;margin-top:10px;padding:16px;font-size:22px;font-weight:900;border-radius:999px;border:0;background:linear-gradient(180deg,#ffe58a,#f7b500 60%,#c98200);color:#5a0710;box-shadow:0 5px 0 #8a5400,0 10px 20px rgba(0,0,0,.4);touch-action:manipulation;letter-spacing:2px}
+.pull:active:not(:disabled){transform:translateY(4px);box-shadow:0 1px 0 #8a5400}
+.pull:disabled{filter:grayscale(.85) brightness(.6);box-shadow:0 3px 0 #333}
+.pull.ready{animation:glow .9s infinite}
+label.lb{display:block;font-weight:800;color:var(--gold2);margin-bottom:8px}
+.row{display:flex;gap:8px}
+input[type=tel],input[type=password],input[type=number],input[type=text],textarea{font-size:18px;padding:12px;border-radius:12px;border:1px solid var(--line);background:rgba(0,0,0,.35);color:#fff;min-width:0;font-family:inherit}
+#phone{flex:1;letter-spacing:1px}
+.btn{font-size:16px;padding:12px 16px;border-radius:12px;border:0;background:var(--gold);color:#5a0710;font-weight:800;font-family:inherit;touch-action:manipulation}
+.btn:disabled{opacity:.5}
+.btn.ghost{background:transparent;border:1px solid var(--line);color:var(--gold2)}
+.btn.sm{font-size:13px;padding:8px 12px}
+.btn.danger{background:#d93a3a;color:#fff}
+.msg{font-size:14px;margin-top:8px;min-height:18px;line-height:1.5}
+.msg.err{color:#ff9b9b}.msg.ok{color:#a6f3a6}
+.note{font-size:12px;opacity:.7;margin-top:6px;line-height:1.5}
+.my{text-align:center}
+.my .big{font-size:22px;font-weight:900;color:var(--gold);margin:4px 0}
+.my .pos{font-size:40px;font-weight:900;color:var(--gold);font-variant-numeric:tabular-nums}
+.pz-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px dashed rgba(255,255,255,.1);font-size:15px}
+.pz-row:last-child{border-bottom:0}
+.pz-sym{font-size:20px;width:84px;letter-spacing:-1px;white-space:nowrap}
+.pz-name{flex:1}
+.pz-left{font-variant-numeric:tabular-nums;color:var(--gold2);font-size:14px}
+.pz-row.out{opacity:.38}.pz-row.out .pz-name{text-decoration:line-through}
+.res-list{max-height:420px;overflow-y:auto}
+.res-row{display:flex;align-items:center;gap:8px;padding:8px;border-radius:10px;font-size:14px}
+.res-row:nth-child(odd){background:rgba(0,0,0,.18)}
+.res-row.win1{background:rgba(127,255,160,.08)}
+.res-row.big{background:linear-gradient(90deg,rgba(247,201,72,.38),rgba(247,201,72,.08));border:1px solid var(--gold);font-weight:800}
+.res-row.me{outline:2px solid #7fe3ff}
+.r-no{min-width:96px;color:#ffd98a;font-variant-numeric:tabular-nums}
+.r-sym{letter-spacing:-1px;white-space:nowrap}
+.r-pz{margin-left:auto;text-align:right}
+.res-row.new{animation:slideIn .6s}
+.empty-res{font-size:13px;opacity:.6;padding:6px 0}
+footer{text-align:center;font-size:12px;opacity:.55;margin-top:20px;line-height:1.6}
+/* overlay */
+#overlay{position:fixed;inset:0;z-index:50;display:grid;place-items:center;background:rgba(20,0,4,.8);overflow:hidden}
+.rays{position:absolute;left:50%;top:50%;width:170vmax;height:170vmax;margin:-85vmax 0 0 -85vmax;background:repeating-conic-gradient(from 0deg,rgba(247,201,72,.26) 0 9deg,transparent 9deg 18deg);animation:spin 9s linear infinite;border-radius:50%}
+.ov-box{position:relative;text-align:center;padding:24px;max-width:92vw;animation:pop .7s cubic-bezier(.2,1.6,.4,1)}
+.ov-tag{font-size:24px;font-weight:900;color:#fff3c4;letter-spacing:4px}
+.ov-sym{font-size:66px;margin:10px 0;letter-spacing:4px}
+.ov-prize{font-size:38px;font-weight:900;background:linear-gradient(180deg,#fff7d1,#f7c948 55%,#e09a1a);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 3px 0 #7a0a14)}
+.ov-who{font-size:19px;margin-top:12px;color:#fff}
+.ov-me{display:inline-block;margin-top:10px;background:#7fe3ff;color:#002b3a;font-weight:900;padding:6px 16px;border-radius:999px;font-size:18px}
+.ov-tap{font-size:12px;opacity:.6;margin-top:18px}
+#overlay.small .rays{display:none}
+#overlay.small .ov-prize{font-size:30px}
+#confetti{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:60}
+body.shake #app{animation:shake .45s 4}
+/* modal & admin */
+.modal{position:fixed;inset:0;z-index:80;background:rgba(0,0,0,.7);display:grid;place-items:center;padding:20px}
+.modal-box{background:#2a0509;border:1px solid var(--line);border-radius:16px;padding:18px;width:min(340px,100%)}
+.modal-box input{width:100%;margin:12px 0}
+.modal-box .row{justify-content:flex-end}
+#admin{position:fixed;inset:0;z-index:70;background:#160205;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.admin-in{max-width:760px;margin:0 auto;padding:14px 14px 60px}
+.admin-h{display:flex;align-items:center;gap:10px;position:sticky;top:0;background:#160205;padding:8px 0;z-index:2;border-bottom:1px solid var(--line)}
+.admin-h b{font-size:20px;color:var(--gold)}
+.admin-h .sp{flex:1}
+.adm-sec{background:rgba(255,255,255,.04);border:1px solid rgba(247,201,72,.22);border-radius:14px;padding:12px 14px;margin:12px 0}
+.adm-sec h3{margin:0 0 10px;font-size:16px;color:var(--gold2)}
+.adm-sec.danger{border-color:#d93a3a}
+.stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px}
+.stat{background:rgba(0,0,0,.3);border-radius:10px;padding:8px 10px}
+.stat .k{font-size:12px;opacity:.7}.stat .v{font-size:20px;font-weight:800;color:var(--gold2);font-variant-numeric:tabular-nums}
+.sw{display:flex;align-items:center;gap:8px;padding:6px 0;font-size:15px}
+.sw input{width:20px;height:20px}
+.grid2{display:grid;grid-template-columns:1fr 110px;gap:8px;align-items:center;margin-top:8px;font-size:14px}
+.grid2 input{font-size:16px;padding:8px}
+.adm-sec textarea{width:100%;height:110px;font-size:14px;margin:8px 0}
+.btns{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.tbl-wrap{overflow-x:auto;margin-top:10px;max-height:60vh;overflow-y:auto}
+table{border-collapse:collapse;width:100%;font-size:13px;font-variant-numeric:tabular-nums}
+th,td{padding:6px 8px;border-bottom:1px solid rgba(255,255,255,.08);text-align:left;white-space:nowrap}
+th{position:sticky;top:0;background:#2a0509;color:var(--gold2)}
+tr.bigw td{background:rgba(247,201,72,.15);font-weight:700}
+.warn{color:#ffb36b;font-size:13px;margin-top:6px}
+#toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:rgba(0,0,0,.88);border:1px solid var(--gold);color:#fff;padding:10px 16px;border-radius:12px;font-size:14px;z-index:90;max-width:90vw;text-align:center;transition:opacity .3s;opacity:0;pointer-events:none}
+#toast.show{opacity:1}
+@keyframes pulse{50%{box-shadow:0 0 2px rgba(247,201,72,.2)}}
+@keyframes glow{50%{box-shadow:0 5px 0 #8a5400,0 0 28px rgba(255,229,138,.9)}}
+@keyframes blink{50%{border-color:#fff}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes pop{from{transform:scale(.3);opacity:0}}
+@keyframes shake{25%{transform:translate(-6px,3px)}50%{transform:translate(5px,-4px)}75%{transform:translate(-3px,-2px)}}
+@keyframes slideIn{from{transform:translateX(-20px);opacity:0;background:rgba(247,201,72,.5)}}
+@keyframes chase{to{background-position:9px 0}}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="eyebrow">11 ‧ 11 限定</div>
+    <h1 id="title">雙11 幸運拉霸</h1>
+    <div class="sub" id="subtitle"></div>
+    <button id="soundBtn" aria-label="音效">🔊</button>
+  </header>
+
+  <div id="demoBar" class="bar demo" hidden>⚠️ 示範模式：尚未填入 Firebase 設定，資料只存在這個瀏覽器。可以開多個分頁模擬多人同時參加。</div>
+  <div id="errBar" class="bar err" hidden></div>
+
+  <div class="status" id="status"><div class="st">載入中…</div></div>
+
+  <section class="card">
+    <div class="card-h"><span>🎟️ 排隊順序</span><small id="qCount"></small></div>
+    <div class="queue" id="queue"><span class="empty">目前沒有人排隊</span></div>
+  </section>
+
+  <section class="machine" id="machine">
+    <div class="bulbs"></div>
+    <div class="now-turn" id="nowTurn">&nbsp;</div>
+    <div class="reels" id="reels">
+      <div class="reel"><div class="strip"></div></div>
+      <div class="reel"><div class="strip"></div></div>
+      <div class="reel"><div class="strip"></div></div>
+      <div class="payline"></div>
+    </div>
+    <div class="turn-hint" id="turnHint">&nbsp;</div>
+    <button class="pull" id="pullBtn" disabled>等待中</button>
+    <div class="bulbs b"></div>
+  </section>
+
+  <section class="card" id="joinCard">
+    <label class="lb" for="phone">輸入會員手機參加</label>
+    <div class="row">
+      <input id="phone" type="tel" inputmode="numeric" maxlength="13" placeholder="09xxxxxxxx" autocomplete="tel">
+      <button class="btn" id="joinBtn">參加</button>
+    </div>
+    <div class="msg" id="joinMsg"></div>
+    <div class="note">每支會員電話限參加一次，依輸入順序輪流拉霸。輪到你時有限時可以親手拉，逾時會自動幫你拉。</div>
+  </section>
+
+  <section class="card my" id="myCard" hidden></section>
+
+  <section class="card">
+    <div class="card-h"><span>🏆 獎項</span><small id="bigLeft"></small></div>
+    <div id="prizeTable"></div>
+  </section>
+
+  <section class="card">
+    <div class="card-h"><span>📜 拉霸結果</span><small id="rCount"></small></div>
+    <div class="res-list" id="results"><div class="empty-res">還沒有結果</div></div>
+  </section>
+
+  <footer>結果即時同步，所有人看到的都一樣<br>獎項將由店家依會員電話統一發放</footer>
+</div>
+
+<div id="overlay" hidden>
+  <div class="rays"></div>
+  <div class="ov-box">
+    <div class="ov-tag" id="ovTag">🎉 恭喜中大獎 🎉</div>
+    <div class="ov-sym" id="ovSym"></div>
+    <div class="ov-prize" id="ovPrize"></div>
+    <div class="ov-who" id="ovWho"></div>
+    <div id="ovMe"></div>
+    <div class="ov-tap">點一下關閉</div>
+  </div>
+</div>
+<canvas id="confetti"></canvas>
+
+<div class="modal" id="pwModal" hidden>
+  <div class="modal-box">
+    <input id="pwInput" type="password" inputmode="numeric" autocomplete="off" aria-label="密碼">
+    <div class="msg err" id="pwMsg"></div>
+    <div class="row"><button class="btn ghost" id="pwCancel">取消</button><button class="btn" id="pwOk">確定</button></div>
+  </div>
+</div>
+
+<div id="admin" hidden>
+  <div class="admin-in">
+    <div class="admin-h"><b>後台管理</b><span id="admMode" class="note"></span><span class="sp"></span><button class="btn ghost sm" id="admClose">關閉</button></div>
+
+    <div class="adm-sec">
+      <h3>活動狀態</h3>
+      <div class="stats" id="admStats"></div>
+      <div id="admWarn"></div>
+    </div>
+
+    <div class="adm-sec">
+      <h3>設定</h3>
+      <label class="sw"><input type="checkbox" id="cfgVerify"> 會員電話驗證（只允許名單內的電話參加）</label>
+      <label class="sw"><input type="checkbox" id="cfgOpen"> 提前開放（測試用，正式開跑前請重置並關閉）</label>
+      <label class="sw"><input type="checkbox" id="cfgPaused"> 暫停報名（已排隊的人照常拉霸）</label>
+      <div class="grid2">
+        <span>大獎中獎率（%）</span><input type="number" id="cfgBig" min="0" max="100" step="0.5">
+        <span>1小時續時券中獎率（%）</span><input type="number" id="cfgSmall" min="0" max="100" step="0.5">
+        <span>輪到時可手動拉的秒數</span><input type="number" id="cfgTurn" min="3" max="120" step="1">
+      </div>
+      <div class="btns" style="margin-top:10px"><button class="btn sm" id="cfgSave">儲存機率／秒數</button></div>
+      <div class="note">大獎名額用完後，原本的大獎機率會變成銘謝惠顧。</div>
+    </div>
+
+    <div class="adm-sec">
+      <h3>會員名單</h3>
+      <div id="admMembers">目前名單：— 筆</div>
+      <textarea id="memText" placeholder="貼上會員電話（每行一筆，或直接貼整份名單，系統會自動抓出手機號碼）"></textarea>
+      <div class="btns">
+        <input type="file" id="memFile" accept=".csv,.txt,.xlsx,.xls">
+        <button class="btn sm" id="memImport">匯入名單</button>
+        <button class="btn ghost sm" id="memClear">清空名單</button>
+      </div>
+      <div class="msg" id="memMsg"></div>
+      <div class="note">支援貼上文字或上傳 Excel／CSV。名單只存加密雜湊，無法反查電話。匯入後會自動開啟會員驗證。</div>
+    </div>
+
+    <div class="adm-sec">
+      <h3>參加名單與結果</h3>
+      <div class="btns">
+        <button class="btn sm" id="dlXlsx">下載 Excel</button>
+        <button class="btn ghost sm" id="dlCsv">下載 CSV</button>
+        <label class="sw" style="padding:0 6px"><input type="checkbox" id="onlyWin"> 只看中獎</label>
+      </div>
+      <div class="tbl-wrap"><table id="admTable"></table></div>
+    </div>
+
+    <div class="adm-sec danger">
+      <h3>重置活動</h3>
+      <p class="note" style="opacity:.9">清除所有參加者、結果，獎項名額恢復原狀。會員名單與設定會保留。測試完請務必重置一次。</p>
+      <button class="btn danger sm" id="resetBtn">重置活動資料</button>
+    </div>
+
+    <button class="btn ghost" id="admLogout" style="width:100%">登出後台</button>
+  </div>
+</div>
+<div id="toast"></div>
+
+<script type="module">
+/* =====================================================================
+   ① 設定區：部署前只需要改這裡
+   ===================================================================== */
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyBvSmJBv1ew_2NJHWwaXX8PzjV0ju1XAVU",
+  authDomain: "lucky1111-94cb3.firebaseapp.com",
+  databaseURL: "https://lucky1111-94cb3-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "lucky1111-94cb3",
+  appId: "1:29345668290:web:a6ac6f379beee10498af5b"
+};
+const ADMIN_EMAIL = "admin@lucky1111.tw";   // Firebase Authentication 建立的後台帳號（密碼設 13491349）
+// 示範模式用的密碼雜湊；填好 Firebase 正式上線時，請改成 ""（空字串）
+const DEMO_PW_HASH = "";
+
+const EVENT = {
+  title: "雙11 幸運拉霸",
+  subtitle: "會員限定 ‧ 每人一次 ‧ 最大獎儲值金 1111 元",
+  startAt: 1794398400000,          // 2026/11/11 20:00（台灣時間）— 若要改，database.rules.json 也要同步改
+  startLabel: "11/11 20:00",
+  key: "d11_2026"
+};
+const DEFAULTS = { bigRate: 10, smallRate: 10, turnSec: 15 };
+/* ===================================================================== */
+
+const SALT = "lucky1111#2026#";
+const PRIZES = {
+  no:    { name: "銘謝惠顧" },
+  h1:    { name: "1小時續時券",     sym: "🍀" },
+  h2:    { name: "2小時續時券",     sym: "⏰", big: true, stock: 6 },
+  r2:    { name: "2小時免費包廂券", sym: "🎁", big: true, stock: 1 },
+  r4:    { name: "4小時免費包廂券", sym: "👑", big: true, stock: 1 },
+  c666:  { name: "儲值金666元",     sym: "🧧", big: true, stock: 1 },
+  c888:  { name: "儲值金888元",     sym: "💎", big: true, stock: 1 },
+  c1111: { name: "儲值金1111元",    sym: "🀄", big: true, stock: 1, jackpot: true }
+};
+const BIG_KEYS = ["h2", "r2", "r4", "c666", "c888", "c1111"];
+const STOCK0 = { h2: 6, r2: 1, r4: 1, c666: 1, c888: 1, c1111: 1 };
+const BIG_TOTAL = 11;
+const FILL = ["🍀", "⏰", "🎁", "👑", "🧧", "💎", "🀄", "🍒", "🍋"];
+const MEKEY = "slot_me_" + EVENT.key;
+
+/* ---------- helpers ---------- */
+const $ = id => document.getElementById(id);
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+function rand() { return crypto.getRandomValues(new Uint32Array(1))[0] / 4294967296; }
+function sha256(ascii) {
+  function rr(v, a) { return (v >>> a) | (v << (32 - a)); }
+  const maxWord = 2 ** 32; let i, j, result = "";
+  const words = [], bitLen = ascii.length * 8;
+  let hash = sha256.h = sha256.h || []; const k = sha256.k = sha256.k || [];
+  let pc = k.length; const comp = {};
+  for (let c = 2; pc < 64; c++) {
+    if (!comp[c]) { for (i = 0; i < 313; i += c) comp[i] = c; hash[pc] = (Math.pow(c, .5) * maxWord) | 0; k[pc++] = (Math.pow(c, 1 / 3) * maxWord) | 0; }
+  }
+  ascii += "\x80";
+  while (ascii.length % 64 - 56) ascii += "\x00";
+  for (i = 0; i < ascii.length; i++) { j = ascii.charCodeAt(i); if (j >> 8) return; words[i >> 2] |= j << ((3 - i) % 4) * 8; }
+  words[words.length] = (bitLen / maxWord) | 0; words[words.length] = bitLen;
+  for (j = 0; j < words.length;) {
+    const w = words.slice(j, j += 16); const old = hash; hash = hash.slice(0, 8);
+    for (i = 0; i < 64; i++) {
+      const w15 = w[i - 15], w2 = w[i - 2], a = hash[0], e = hash[4];
+      const t1 = hash[7] + (rr(e, 6) ^ rr(e, 11) ^ rr(e, 25)) + ((e & hash[5]) ^ ((~e) & hash[6])) + k[i]
+        + (w[i] = (i < 16) ? w[i] : (w[i - 16] + (rr(w15, 7) ^ rr(w15, 18) ^ (w15 >>> 3)) + w[i - 7] + (rr(w2, 17) ^ rr(w2, 19) ^ (w2 >>> 10))) | 0);
+      const t2 = (rr(a, 2) ^ rr(a, 13) ^ rr(a, 22)) + ((a & hash[1]) ^ (a & hash[2]) ^ (hash[1] & hash[2]));
+      hash = [(t1 + t2) | 0].concat(hash); hash[4] = (hash[4] + t1) | 0;
+    }
+    for (i = 0; i < 8; i++) hash[i] = (hash[i] + old[i]) | 0;
+  }
+  for (i = 0; i < 8; i++) for (j = 3; j + 1; j--) { const b = (hash[i] >> (j * 8)) & 255; result += (b < 16 ? "0" : "") + b.toString(16); }
+  return result;
+}
+const phoneHash = p => sha256(SALT + p);
+function normPhone(s) {
+  let d = String(s || "").replace(/\D/g, "");
+  if (d.startsWith("886")) d = "0" + d.slice(3);
+  if (d.length === 9 && d[0] === "9") d = "0" + d;
+  return /^09\d{8}$/.test(d) ? d : null;
+}
+function extractPhones(text) {
+  const merged = String(text).replace(/(\d)[ \-](?=\d)/g, "$1");
+  const out = new Set();
+  for (const tok of merged.match(/\+?\d+/g) || []) { const p = normPhone(tok); if (p) out.add(p); }
+  return [...out];
+}
+function pickPrize(st, cfg) {
+  const big = (+cfg.bigRate || 0) / 100, small = (+cfg.smallRate || 0) / 100;
+  const r = rand();
+  if (r < big) {
+    const keys = BIG_KEYS.filter(k => (st[k] || 0) > 0);
+    const tot = keys.reduce((a, k) => a + st[k], 0);
+    if (tot <= 0) return "no";
+    let x = rand() * tot;
+    for (const k of keys) { x -= st[k]; if (x < 0) { st[k]--; return k; } }
+    const k = keys[keys.length - 1]; st[k]--; return k;
+  }
+  if (r < big + small) return "h1";
+  return "no";
+}
+function isOpenCfg(cfg, t) { return cfg.paused !== true && (cfg.open === true || t >= EVENT.startAt); }
+function seeded(str) {
+  let h = parseInt(sha256(str).slice(0, 8), 16) || 1;
+  return () => { h ^= h << 13; h ^= h >>> 17; h ^= h << 5; return (h >>> 0) / 4294967296; };
+}
+function symsFor(id, p) {
+  const P = PRIZES[p];
+  if (P && P.sym) return [P.sym, P.sym, P.sym];
+  const r = seeded("no" + id);
+  const s = [0, 1, 2].map(() => FILL[Math.floor(r() * FILL.length)]);
+  if (s[0] === s[1] && s[1] === s[2]) s[2] = FILL[(FILL.indexOf(s[2]) + 1 + Math.floor(r() * (FILL.length - 1))) % FILL.length];
+  return s;
+}
+const gapOf = p => (PRIZES[p] && PRIZES[p].jackpot) ? 12000 : (PRIZES[p] && PRIZES[p].big) ? 10000 : 6500;
+function fmtTime(ms) { if (!ms) return ""; const d = new Date(ms); const z = n => String(n).padStart(2, "0"); return `${d.getMonth() + 1}/${d.getDate()} ${z(d.getHours())}:${z(d.getMinutes())}:${z(d.getSeconds())}`; }
+let toastT; function toast(msg, ms = 2600) { const t = $("toast"); t.textContent = msg; t.classList.add("show"); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove("show"), ms); }
+
+/* ---------- sound ---------- */
+const SFX = (() => {
+  let ctx = null, on = localStorage.getItem("slot_snd") !== "0";
+  function ac() {
+    if (!ctx) { const C = window.AudioContext || window.webkitAudioContext; if (!C) return null; ctx = new C(); }
+    if (ctx.state === "suspended") ctx.resume();
+    return ctx;
+  }
+  function tone(f, t, d, type = "square", v = .15, slide) {
+    if (!on) return; const c = ac(); if (!c) return;
+    const o = c.createOscillator(), g = c.createGain(), s = c.currentTime + t;
+    o.type = type; o.frequency.setValueAtTime(f, s);
+    if (slide) o.frequency.exponentialRampToValueAtTime(slide, s + d);
+    g.gain.setValueAtTime(0.0001, s); g.gain.exponentialRampToValueAtTime(v, s + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, s + d);
+    o.connect(g).connect(c.destination); o.start(s); o.stop(s + d + 0.05);
+  }
+  const api = {
+    unlock() { if (on) ac(); },
+    get on() { return on; },
+    toggle() { on = !on; localStorage.setItem("slot_snd", on ? "1" : "0"); if (on) ac(); return on; },
+    tick() { tone(1500, 0, .025, "square", .04); },
+    stop() { tone(220, 0, .12, "triangle", .35, 90); },
+    lever() { tone(600, 0, .25, "sawtooth", .1, 140); },
+    lose() { tone(392, 0, .16, "triangle", .22); tone(330, .17, .16, "triangle", .22); tone(247, .34, .4, "triangle", .22); },
+    small() { [784, 988, 1175, 1568].forEach((f, i) => tone(f, i * .09, .28, "triangle", .25)); },
+    big() {
+      [[523, 0, .14], [659, .14, .14], [784, .28, .14], [1047, .42, .4], [784, .84, .14], [1047, .98, .8]]
+        .forEach(([f, t, d]) => { tone(f, t, d, "square", .1); tone(f / 2, t, d, "triangle", .2); });
+      for (let i = 0; i < 16; i++) tone(1800 + Math.random() * 1800, 1.1 + i * .07, .08, "sine", .08);
+    },
+    jackpot() {
+      api.big();
+      [[784, 2.0, .14], [988, 2.14, .14], [1175, 2.28, .14], [1568, 2.42, .5], [1319, 2.92, .14], [1568, 3.06, 1.1]]
+        .forEach(([f, t, d]) => { tone(f, t, d, "square", .1); tone(f / 2, t, d, "sawtooth", .08); });
+      for (let i = 0; i < 26; i++) tone(2000 + Math.random() * 2000, 3.2 + i * .06, .07, "sine", .08);
+    }
+  };
+  return api;
+})();
+document.addEventListener("pointerdown", () => SFX.unlock(), { passive: true });
+$("soundBtn").textContent = SFX.on ? "🔊" : "🔇";
+$("soundBtn").onclick = () => { $("soundBtn").textContent = SFX.toggle() ? "🔊" : "🔇"; };
+
+/* ---------- confetti ---------- */
+const Confetti = (() => {
+  const cv = $("confetti"), cx = cv.getContext("2d"); let parts = [], until = 0, raf = 0;
+  const colors = ["#f7c948", "#ffe9a3", "#ff4d5e", "#ffffff", "#ff9f1c", "#7fe3ff"];
+  function resize() { cv.width = innerWidth * devicePixelRatio; cv.height = innerHeight * devicePixelRatio; }
+  addEventListener("resize", resize); resize();
+  function burst(ms, n) {
+    resize(); until = Math.max(until, performance.now() + ms);
+    for (let i = 0; i < n; i++) parts.push({ x: Math.random() * cv.width, y: -Math.random() * cv.height * .5, vx: (Math.random() - .5) * 4, vy: 2 + Math.random() * 5, r: Math.random() * 6, vr: (Math.random() - .5) * .3, s: (5 + Math.random() * 8) * devicePixelRatio, c: colors[i % colors.length] });
+    if (!raf) raf = requestAnimationFrame(step);
+  }
+  function step(t) {
+    cx.clearRect(0, 0, cv.width, cv.height);
+    const g = devicePixelRatio;
+    parts.forEach(p => { p.x += p.vx * g; p.y += p.vy * g; p.vy += .05; p.r += p.vr; cx.save(); cx.translate(p.x, p.y); cx.rotate(p.r); cx.fillStyle = p.c; cx.fillRect(-p.s / 2, -p.s / 4, p.s, p.s / 2); cx.restore(); });
+    parts = parts.filter(p => p.y < cv.height + 40);
+    if (t < until && parts.length < 400) for (let i = 0; i < 3; i++) parts.push({ x: Math.random() * cv.width, y: -20, vx: (Math.random() - .5) * 4, vy: 2 + Math.random() * 4, r: 0, vr: (Math.random() - .5) * .3, s: (5 + Math.random() * 8) * g, c: colors[Math.floor(Math.random() * colors.length)] });
+    if (parts.length) raf = requestAnimationFrame(step); else { raf = 0; cx.clearRect(0, 0, cv.width, cv.height); }
+  }
+  return { burst };
+})();
+
+/* ---------- backends ---------- */
+function makeDemo() {
+  const K = "slot1111_demo_db";
+  const load = () => { try { return JSON.parse(localStorage.getItem(K)) || {}; } catch (e) { return {}; } };
+  let db = load(); const subs = [], privSubs = []; let admin = sessionStorage.getItem("slot_demo_admin") === "1"; let authCb = null;
+  const emit = () => { subs.forEach(f => f()); privSubs.forEach(f => f()); };
+  const save = () => { localStorage.setItem(K, JSON.stringify(db)); emit(); };
+  addEventListener("storage", e => { if (e.key === K) { db = load(); emit(); } });
+  const snap = () => ({ config: db.config || {}, entries: db.entries || {}, res: db.res || {}, stock: db.stock || null });
+  const B = {
+    mode: "demo",
+    now: () => Date.now(),
+    subscribe(cb) { subs.push(() => cb(snap())); setTimeout(() => cb(snap()), 0); },
+    newId: () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8),
+    async getTaken(h) { db = load(); return (db.taken || {})[h] || null; },
+    async isMember(h) { db = load(); return !!(db.members || {})[h]; },
+    async join({ h, id, l3, phone }) {
+      db = load(); const cfg = db.config || {};
+      if ((db.taken || {})[h]) throw new Error("taken");
+      if (cfg.verify === true && !(db.members || {})[h]) throw new Error("not member");
+      if (!isOpenCfg(cfg, Date.now())) throw new Error("closed");
+      db.taken = { ...(db.taken || {}), [h]: id };
+      db.entries = { ...(db.entries || {}), [id]: { l3, at: Date.now() } };
+      db.priv = { ...(db.priv || {}), [id]: { ph: phone } };
+      save();
+    },
+    async initStock() { db = load(); if (!db.stock) { db.stock = { ...STOCK0 }; save(); } },
+    async draw(id, cfg) {
+      db = load(); const st = db.stock; if (!st) return;
+      st.d = st.d || {}; if (st.d[id]) return;
+      st.d[id] = pickPrize(st, cfg); save();
+      await B.writeRes(id, st.d[id]);
+    },
+    async writeRes(id, p) {
+      db = load(); db.res = db.res || {};
+      if (db.res[id] || !db.stock || !db.stock.d || db.stock.d[id] !== p) return;
+      db.res[id] = { p, at: Date.now() }; save();
+    },
+    onAuth(cb) { authCb = cb; cb(admin); },
+    isAdmin: () => admin,
+    async adminLogin(pw) {
+      if (!DEMO_PW_HASH || sha256("lucky1111#admin#" + pw) !== DEMO_PW_HASH) throw new Error("bad");
+      admin = true; sessionStorage.setItem("slot_demo_admin", "1"); authCb && authCb(true);
+    },
+    async adminLogout() { admin = false; sessionStorage.removeItem("slot_demo_admin"); authCb && authCb(false); },
+    subscribePrivate(cb) { const f = () => cb(db.priv || {}); privSubs.push(f); f(); return () => { const i = privSubs.indexOf(f); if (i >= 0) privSubs.splice(i, 1); }; },
+    async setConfig(patch) { db = load(); db.config = { ...(db.config || {}), ...patch }; save(); },
+    async importMembers(obj) { db = load(); db.members = { ...(db.members || {}), ...obj }; save(); },
+    async countMembers() { db = load(); return Object.keys(db.members || {}).length; },
+    async clearMembers() { db = load(); db.members = {}; save(); },
+    async resetAll() { db = load(); db = { config: db.config, members: db.members, stock: { ...STOCK0 } }; save(); }
+  };
+  return B;
+}
+
+async function makeFirebase() {
+  const base = "https://www.gstatic.com/firebasejs/10.12.2/";
+  const [{ initializeApp }, D, A] = await Promise.all([import(base + "firebase-app.js"), import(base + "firebase-database.js"), import(base + "firebase-auth.js")]);
+  const app = initializeApp(FIREBASE_CONFIG);
+  const db = D.getDatabase(app), auth = A.getAuth(app);
+  let offset = 0, isAdm = false;
+  D.onValue(D.ref(db, ".info/serverTimeOffset"), s => { offset = s.val() || 0; });
+  const B = {
+    mode: "firebase",
+    now: () => Date.now() + offset,
+    subscribe(cb) {
+      const st = { config: {}, entries: {}, res: {}, stock: null }, got = new Set();
+      for (const k of ["config", "entries", "res", "stock"]) {
+        D.onValue(D.ref(db, k), s => { st[k] = s.val() || (k === "stock" ? null : {}); got.add(k); if (got.size >= 4) cb({ ...st }); },
+          err => showErr("讀取資料失敗：" + err.message));
+      }
+    },
+    newId: () => D.push(D.ref(db, "entries")).key,
+    async getTaken(h) { return (await D.get(D.ref(db, "taken/" + h))).val(); },
+    async isMember(h) { return (await D.get(D.ref(db, "members/" + h))).exists(); },
+    async join({ h, id, l3, phone }) {
+      await D.update(D.ref(db), { ["taken/" + h]: id, ["entries/" + id]: { l3, at: D.serverTimestamp() }, ["private/" + id]: { ph: phone } });
+    },
+    async initStock() { try { await D.runTransaction(D.ref(db, "stock"), cur => cur === null ? { ...STOCK0 } : undefined); } catch (e) { console.warn(e); } },
+    async draw(id, cfg) {
+      const r = await D.runTransaction(D.ref(db, "stock"), cur => {
+        if (!cur) return cur;
+        if (cur.d && cur.d[id]) return;           // 已抽過 → 放棄
+        const p = pickPrize(cur, cfg);
+        cur.d = { ...(cur.d || {}), [id]: p };
+        return cur;
+      }, { applyLocally: false });
+      const v = r.snapshot.val();
+      if (v && v.d && v.d[id]) await B.writeRes(id, v.d[id]);
+    },
+    async writeRes(id, p) { try { await D.set(D.ref(db, "res/" + id), { p, at: D.serverTimestamp() }); } catch (e) { /* 已由他人寫入 */ } },
+    onAuth(cb) { A.onAuthStateChanged(auth, u => { isAdm = !!u && u.email === ADMIN_EMAIL; cb(isAdm); }); },
+    isAdmin: () => isAdm,
+    async adminLogin(pw) { await A.signInWithEmailAndPassword(auth, ADMIN_EMAIL, pw); },
+    async adminLogout() { await A.signOut(auth); },
+    subscribePrivate(cb) { return D.onValue(D.ref(db, "private"), s => cb(s.val() || {}), e => console.warn(e)); },
+    async setConfig(patch) { await D.update(D.ref(db, "config"), patch); },
+    async importMembers(obj) { await D.update(D.ref(db, "members"), obj); },
+    async countMembers() { const s = await D.get(D.ref(db, "members")); return s.exists() ? Object.keys(s.val()).length : 0; },
+    async clearMembers() { await D.set(D.ref(db, "members"), null); },
+    async resetAll() { await D.update(D.ref(db), { entries: null, private: null, taken: null, res: null, stock: { ...STOCK0 } }); }
+  };
+  return B;
+}
+function showErr(m) { const b = $("errBar"); b.textContent = m; b.hidden = false; }
+
+/* ---------- state ---------- */
+let backend;
+let S = { config: {}, entries: {}, res: {}, stock: null };
+let loaded = false, list = [], joinNo = new Map();
+const seenRes = new Set(), revealed = new Set(), animQueue = [];
+let animBusy = false, animatingId = null, stockInitTried = false;
+const inflight = {}, inflightRes = {}, pend = {};
+const JITTER = 800 + Math.floor(Math.random() * 1500);
+let me = null; try { me = JSON.parse(localStorage.getItem(MEKEY)); } catch (e) { }
+let priv = {}, privUnsub = null, adminOpen = false, membersCount = null;
+const CFG = () => ({ ...DEFAULTS, ...S.config });
+const now = () => backend ? backend.now() : Date.now();
+const lbl = id => { const e = S.entries[id]; return `第${joinNo.get(id) || "?"}位 ‧ 尾號${e ? esc(e.l3) : "???"}`; };
+
+/* ---------- reels ---------- */
+const strips = [...document.querySelectorAll(".strip")];
+let curSyms = ["🀄", "🀄", "🀄"];
+const rndSym = () => FILL[Math.floor(Math.random() * FILL.length)];
+function setStrip(i, arr) { strips[i].style.transition = "none"; strips[i].style.transform = "translateY(0)"; strips[i].innerHTML = arr.map(s => `<div class="sym">${s}</div>`).join(""); }
+curSyms.forEach((s, i) => setStrip(i, [rndSym(), s, rndSym()]));
+async function spinReels(target) {
+  const H = strips[0].children[0].getBoundingClientRect().height || 74;
+  const arrs = strips.map((st, i) => {
+    const kids = [...st.children].map(c => c.textContent);
+    const top = kids[0] || rndSym(), mid = kids[1] || curSyms[i];
+    const n = 24 + i * 7, arr = [top, mid];
+    for (let k = 0; k < n; k++) arr.push(rndSym());
+    arr.push(target[i], rndSym());
+    setStrip(i, arr); return arr;
+  });
+  void strips[0].offsetHeight;
+  $("reels").classList.remove("win");
+  let ticking = true;
+  (async () => { while (ticking) { SFX.tick(); await sleep(75); } })();
+  const durs = [1900, 2550, 3200];
+  strips.forEach((st, i) => {
+    st.parentElement.classList.add("spin");
+    st.style.transition = `transform ${durs[i]}ms cubic-bezier(.17,.67,.22,1.03)`;
+    st.style.transform = `translateY(${-(arrs[i].length - 3) * H}px)`;
+    setTimeout(() => { st.parentElement.classList.remove("spin"); SFX.stop(); }, durs[i]);
+  });
+  await sleep(durs[2] + 120);
+  ticking = false;
+  strips.forEach((st, i) => { const a = arrs[i]; setStrip(i, a.slice(-3)); });
+  curSyms = target;
+}
+
+/* ---------- derived ---------- */
+function rebuild() {
+  list = Object.entries(S.entries || {}).map(([id, e]) => ({ id, ...e })).filter(e => typeof e.at === "number")
+    .sort((a, b) => a.at - b.at || (a.id < b.id ? -1 : 1));
+  joinNo = new Map(list.map((e, i) => [e.id, i + 1]));
+}
+function turnInfo() {
+  const head = list.find(e => !S.res[e.id]);
+  if (!head) return null;
+  let last = 0, lastP = null;
+  for (const r of Object.values(S.res)) if (r && r.at > last) { last = r.at; lastP = r.p; }
+  const T0 = Math.max(head.at + 1500, last ? last + gapOf(lastP) : 0);
+  return { head, T0, deadline: T0 + (+CFG().turnSec || 15) * 1000, drawn: !!(S.stock && S.stock.d && S.stock.d[head.id]) };
+}
+
+/* ---------- data in ---------- */
+function onData(d) {
+  S = d; loaded = true; rebuild();
+  const t = now(), fresh = [];
+  for (const id of [...seenRes]) if (!S.res[id]) { seenRes.delete(id); revealed.delete(id); }   // 後台重置
+  for (const [id, r] of Object.entries(S.res)) {
+    if (seenRes.has(id)) continue; seenRes.add(id);
+    if (t - (r.at || 0) > 9000) revealed.add(id); else fresh.push([id, r]);
+  }
+  fresh.sort((a, b) => a[1].at - b[1].at).forEach(([id]) => animQueue.push(id));
+  if (me && !S.entries[me.id]) { me = null; localStorage.removeItem(MEKEY); }
+  renderAll(); runAnim();
+}
+
+/* ---------- game loop ---------- */
+function doDraw(id) {
+  if (inflight[id]) return; inflight[id] = 1;
+  backend.draw(id, CFG()).catch(e => console.warn("draw", e)).finally(() => setTimeout(() => delete inflight[id], 4000));
+}
+function logicTick() {
+  if (!loaded) return;
+  const t = now();
+  if (!S.stock && !stockInitTried) { stockInitTried = true; backend.initStock(); }
+  const d = (S.stock && S.stock.d) || {};
+  for (const id in d) {
+    if (S.res[id] || !S.entries[id]) continue;
+    pend[id] = pend[id] || t;
+    if (t - pend[id] > 2500 && !inflightRes[id]) { inflightRes[id] = 1; backend.writeRes(id, d[id]).finally(() => setTimeout(() => delete inflightRes[id], 3000)); }
+  }
+  const ti = turnInfo();
+  if (ti && !ti.drawn && S.stock) {
+    const mine = me && me.id === ti.head.id;
+    if (t >= ti.deadline + (mine ? 0 : JITTER)) doDraw(ti.head.id);
+  }
+}
+async function runAnim() {
+  if (animBusy) return; animBusy = true;
+  while (animQueue.length) {
+    const id = animQueue.shift(); const r = S.res[id];
+    if (!r) continue;
+    if (now() - r.at > 25000 || document.hidden) { revealed.add(id); renderAll(); continue; }
+    animatingId = id; renderQueue(); renderTurn();
+    await spinReels(symsFor(id, r.p));
+    revealed.add(id); animatingId = null; renderAll(true);
+    celebrate(id, r.p);
+    await sleep(PRIZES[r.p] && PRIZES[r.p].big ? 1800 : 700);
+  }
+  animBusy = false; renderAll();
+}
+function celebrate(id, p) {
+  const P = PRIZES[p] || PRIZES.no, mine = me && me.id === id;
+  if (P.big) {
+    $("reels").classList.add("win");
+    showOverlay(id, p, mine, false);
+    Confetti.burst(P.jackpot ? 6500 : 4000, P.jackpot ? 260 : 160);
+    if (P.jackpot) { SFX.jackpot(); document.body.classList.add("shake"); setTimeout(() => document.body.classList.remove("shake"), 1900); } else SFX.big();
+  } else if (p === "h1") {
+    SFX.small(); Confetti.burst(1200, 50); flash(`🍀 ${lbl(id)} 獲得 1小時續時券`);
+    if (mine) showOverlay(id, p, true, true);
+  } else {
+    SFX.lose(); flash(`${lbl(id)} ‧ 銘謝惠顧`);
+    if (mine) showOverlay(id, p, true, true);
+  }
+}
+let flashEl = null;
+function flash(text) {
+  if (flashEl) flashEl.remove();
+  flashEl = document.createElement("div"); flashEl.className = "flash"; flashEl.innerHTML = text;
+  $("machine").appendChild(flashEl); const el = flashEl; setTimeout(() => el.remove(), 2600);
+}
+let ovT;
+function showOverlay(id, p, mine, small) {
+  const P = PRIZES[p] || PRIZES.no, ov = $("overlay");
+  ov.classList.toggle("small", !!small);
+  $("ovTag").textContent = small ? "你的拉霸結果" : (P.jackpot ? "🎊 頭獎降臨 🎊" : "🎉 恭喜中大獎 🎉");
+  $("ovSym").textContent = symsFor(id, p).join("");
+  $("ovPrize").textContent = P.name;
+  $("ovWho").innerHTML = lbl(id);
+  $("ovMe").innerHTML = mine ? `<span class="ov-me">${p === "no" ? "下次再來！謝謝參加" : "就是你！🎉"}</span>` : "";
+  ov.hidden = false; clearTimeout(ovT);
+  ovT = setTimeout(() => ov.hidden = true, P.jackpot ? 8000 : 6000);
+}
+$("overlay").onclick = () => $("overlay").hidden = true;
+
+/* ---------- render ---------- */
+function renderAll(newRow) { renderStatus(); renderQueue(); renderTurn(); renderMy(); renderPrizes(); renderResults(newRow); if (adminOpen) renderAdmin(); }
+function bigLeftShown() {
+  const left = { ...STOCK0 };
+  for (const id of revealed) { const r = S.res[id]; if (r && left[r.p] != null) left[r.p]--; }
+  return left;
+}
+function renderStatus() {
+  const t = now(), cfg = CFG(), el = $("status");
+  if (!loaded) return;
+  if (cfg.paused) { el.innerHTML = `<div class="st">⏸ 報名暫停中</div>`; return; }
+  if (!isOpenCfg(cfg, t)) {
+    let s = Math.max(0, Math.floor((EVENT.startAt - t) / 1000));
+    const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), ss = s % 60, z = n => String(n).padStart(2, "0");
+    const dd = Math.floor(h / 24);
+    el.innerHTML = `<div class="st">${EVENT.startLabel} 準時開跑</div><div class="cd">${dd > 0 ? dd + "天 " : ""}${z(h % 24)}:${z(m)}:${z(ss)}</div>`;
+    return;
+  }
+  const left = bigLeftShown(), bl = BIG_KEYS.reduce((a, k) => a + left[k], 0);
+  el.innerHTML = `<div class="st">🔥 活動進行中 ‧ 已有 <b>${list.length}</b> 人參加 ‧ 大獎剩 <b style="color:var(--gold)">${bl}</b> 名</div>`;
+}
+function renderQueue() {
+  const q = list.filter(e => !revealed.has(e.id));
+  $("qCount").textContent = q.length ? `${q.length} 人等待中` : "";
+  if (!q.length) { $("queue").innerHTML = `<span class="empty">目前沒有人排隊</span>`; return; }
+  const max = 80;
+  $("queue").innerHTML = q.slice(0, max).map((e, i) => {
+    const cls = ["chip"]; if (i === 0) cls.push("cur"); if (me && me.id === e.id) cls.push("me");
+    const tag = i === 0 ? `<span class="tag">${(S.res[e.id] || animatingId === e.id) ? "拉霸中" : "輪到"}</span>` : (me && me.id === e.id ? `<span class="tag">你</span>` : "");
+    return `<span class="${cls.join(" ")}"><b>${i + 1}</b>${esc(e.l3)}${tag}</span>`;
+  }).join("") + (q.length > max ? `<span class="empty">…還有 ${q.length - max} 位</span>` : "");
+}
+function renderTurn() {
+  if (!loaded) return;
+  const t = now(), ti = turnInfo(), btn = $("pullBtn");
+  let turn = "&nbsp;", hint = "&nbsp;", ready = false;
+  const cur = list.find(e => !revealed.has(e.id));
+  if (animatingId) { turn = `🎰 ${lbl(animatingId)} 拉霸中！`; }
+  else if (cur && S.res[cur.id]) { turn = `🎰 ${lbl(cur.id)} 拉霸中！`; }
+  else if (ti) {
+    const mine = me && me.id === ti.head.id;
+    if (ti.drawn) turn = `🎰 ${lbl(ti.head.id)} 拉霸中！`;
+    else if (t < ti.T0) { turn = `下一位：${lbl(ti.head.id)}`; hint = "準備中…"; }
+    else {
+      const sec = Math.max(0, Math.ceil((ti.deadline - t) / 1000));
+      if (mine) { turn = "⭐ 輪到你了！"; hint = `請在 ${sec} 秒內按下拉霸，逾時自動幫你拉`; ready = !animBusy && !inflight[ti.head.id]; }
+      else { turn = `輪到 ${lbl(ti.head.id)}`; hint = `等待拉霸中… ${sec} 秒後自動拉霸`; }
+    }
+  } else if (isOpenCfg(CFG(), t)) { turn = "目前沒有人排隊"; hint = "輸入會員電話，馬上參加！"; }
+  else { turn = `${EVENT.startLabel} 開跑`; }
+  $("nowTurn").innerHTML = turn; $("turnHint").innerHTML = hint;
+  btn.disabled = !ready; btn.classList.toggle("ready", ready);
+  btn.textContent = ready ? "按我拉霸！" : "等待中";
+}
+function renderMy() {
+  const jc = $("joinCard"), mc = $("myCard");
+  if (!me) { jc.hidden = false; mc.hidden = true; $("joinBtn").disabled = !isOpenCfg(CFG(), now()); return; }
+  jc.hidden = true; mc.hidden = false;
+  let html;
+  if (revealed.has(me.id) && S.res[me.id]) {
+    const p = S.res[me.id].p, P = PRIZES[p];
+    html = `<div>你的拉霸結果（${lbl(me.id)}）</div><div class="big">${symsFor(me.id, p).join("")}</div><div class="big">${P.name}</div>` +
+      (p !== "no" ? `<div class="note">獎項將由店家依你的會員電話統一發放</div>` : `<div class="note">謝謝參加！</div>`);
+  } else {
+    const q = list.filter(e => !revealed.has(e.id)); const pos = q.findIndex(e => e.id === me.id) + 1;
+    html = `<div>你已參加（${lbl(me.id)}）</div><div>目前排在</div><div class="pos">第 ${pos || "-"} 位</div>` +
+      `<div class="note">${pos === 1 ? "輪到你了！請按上方拉霸按鈕" : "請保持在此頁面，輪到你時可以親手拉霸"}</div>`;
+  }
+  mc.innerHTML = html + `<div style="margin-top:8px"><button class="btn ghost sm" id="otherPhone">用其他會員電話參加</button></div>`;
+  $("otherPhone").onclick = () => { me = null; localStorage.removeItem(MEKEY); renderAll(); };
+}
+function renderPrizes() {
+  const left = bigLeftShown(); const bl = BIG_KEYS.reduce((a, k) => a + left[k], 0);
+  $("bigLeft").textContent = `大獎剩 ${bl} / ${BIG_TOTAL} 名`;
+  const rows = [...BIG_KEYS].reverse().map(k => {
+    const P = PRIZES[k];
+    return `<div class="pz-row ${left[k] <= 0 ? "out" : ""}"><span class="pz-sym">${P.sym.repeat(3)}</span><span class="pz-name">${P.name}</span><span class="pz-left">剩 ${Math.max(0, left[k])} / ${STOCK0[k]}</span></div>`;
+  });
+  rows.push(`<div class="pz-row"><span class="pz-sym">🍀🍀🍀</span><span class="pz-name">1小時續時券</span><span class="pz-left">不限量</span></div>`);
+  rows.push(`<div class="pz-row"><span class="pz-sym">🍒🍋⏰</span><span class="pz-name">銘謝惠顧</span><span class="pz-left"></span></div>`);
+  $("prizeTable").innerHTML = rows.join("");
+}
+let lastTopRes = null;
+function renderResults(newRow) {
+  const arr = [...revealed].filter(id => S.res[id]).sort((a, b) => S.res[b].at - S.res[a].at);
+  $("rCount").textContent = arr.length ? `${arr.length} 筆` : "";
+  if (!arr.length) { $("results").innerHTML = `<div class="empty-res">還沒有結果</div>`; lastTopRes = null; return; }
+  const top = arr[0];
+  $("results").innerHTML = arr.map((id, i) => {
+    const p = S.res[id].p, P = PRIZES[p] || PRIZES.no, cls = ["res-row"];
+    if (P.big) cls.push("big"); else if (p === "h1") cls.push("win1");
+    if (me && me.id === id) cls.push("me");
+    if (i === 0 && newRow && top !== lastTopRes) cls.push("new");
+    return `<div class="${cls.join(" ")}"><span class="r-no">${lbl(id)}</span><span class="r-sym">${symsFor(id, p).join("")}</span><span class="r-pz">${P.big ? "🎉 " : ""}${P.name}</span></div>`;
+  }).join("");
+  lastTopRes = top;
+}
+
+/* ---------- join ---------- */
+async function onJoin() {
+  const msg = $("joinMsg"); msg.className = "msg";
+  const phone = normPhone($("phone").value);
+  if (!phone) { msg.className = "msg err"; msg.textContent = "請輸入正確的手機號碼（09 開頭共 10 碼）"; return; }
+  if (!loaded) { msg.textContent = "資料載入中，請稍候再試"; return; }
+  const cfg = CFG();
+  if (!isOpenCfg(cfg, now())) { msg.className = "msg err"; msg.textContent = cfg.paused ? "目前暫停報名" : `${EVENT.startLabel} 才開放參加喔！`; return; }
+  const btn = $("joinBtn"); btn.disabled = true; msg.textContent = "確認中…";
+  try {
+    const h = phoneHash(phone);
+    const taken = await backend.getTaken(h);
+    if (taken) {
+      msg.className = "msg err"; msg.textContent = "這支電話已經參加過囉（每人限一次）";
+      if (S.entries[taken]) { me = { id: taken, l3: phone.slice(-3) }; localStorage.setItem(MEKEY, JSON.stringify(me)); renderAll(); toast("已為你顯示這支電話的順位／結果"); }
+      return;
+    }
+    if (cfg.verify === true && !(await backend.isMember(h))) { msg.className = "msg err"; msg.textContent = "查無此會員電話，請輸入註冊會員時使用的手機號碼"; return; }
+    const id = backend.newId();
+    await backend.join({ h, id, l3: phone.slice(-3), phone });
+    me = { id, l3: phone.slice(-3) }; localStorage.setItem(MEKEY, JSON.stringify(me));
+    $("phone").value = ""; msg.className = "msg ok"; msg.textContent = "參加成功！";
+    SFX.small(); renderAll();
+    toast(`參加成功！你是 ${lbl(id)}`);
+  } catch (e) {
+    console.warn(e); msg.className = "msg err"; msg.textContent = "參加失敗，請確認電話是否正確或稍後再試";
+  } finally { btn.disabled = !isOpenCfg(CFG(), now()); }
+}
+$("joinBtn").onclick = onJoin;
+$("phone").addEventListener("keydown", e => { if (e.key === "Enter") onJoin(); });
+$("pullBtn").onclick = () => {
+  const ti = turnInfo(); if (!ti || !me || ti.head.id !== me.id || ti.drawn) return;
+  SFX.lever(); $("pullBtn").disabled = true; $("pullBtn").classList.remove("ready"); $("pullBtn").textContent = "拉霸中…";
+  doDraw(ti.head.id);
+};
+
+/* ---------- admin ---------- */
+let taps = [];
+$("title").addEventListener("click", () => {
+  const t = Date.now(); taps = taps.filter(x => t - x < 3000); taps.push(t);
+  if (taps.length >= 5) { taps = []; openAdmin(); }
+});
+function openAdmin() {
+  if (!backend) return;
+  if (backend.isAdmin()) { showAdmin(); return; }
+  $("pwInput").value = ""; $("pwMsg").textContent = ""; $("pwModal").hidden = false; setTimeout(() => $("pwInput").focus(), 50);
+}
+async function tryLogin() {
+  const pw = $("pwInput").value; if (!pw) return;
+  $("pwOk").disabled = true; $("pwMsg").textContent = "";
+  try { await backend.adminLogin(pw); $("pwModal").hidden = true; showAdmin(); }
+  catch (e) { $("pwMsg").textContent = (e && e.code === "auth/network-request-failed") ? "網路連線失敗" : "密碼錯誤"; }
+  finally { $("pwOk").disabled = false; }
+}
+$("pwOk").onclick = tryLogin;
+$("pwInput").addEventListener("keydown", e => { if (e.key === "Enter") tryLogin(); });
+$("pwCancel").onclick = () => $("pwModal").hidden = true;
+function showAdmin() {
+  adminOpen = true; $("admin").hidden = false; document.body.style.overflow = "hidden";
+  const c = CFG();
+  $("cfgVerify").checked = c.verify === true; $("cfgOpen").checked = c.open === true; $("cfgPaused").checked = c.paused === true;
+  $("cfgBig").value = c.bigRate; $("cfgSmall").value = c.smallRate; $("cfgTurn").value = c.turnSec;
+  $("admMode").textContent = backend.mode === "demo" ? "示範模式" : "Firebase 連線中";
+  refreshMembers(); renderAdmin();
+}
+$("admClose").onclick = () => { adminOpen = false; $("admin").hidden = true; document.body.style.overflow = ""; };
+$("admLogout").onclick = async () => { await backend.adminLogout(); $("admClose").onclick(); toast("已登出後台"); };
+async function refreshMembers() {
+  try { membersCount = await backend.countMembers(); } catch (e) { membersCount = null; }
+  $("admMembers").textContent = `目前名單：${membersCount == null ? "—" : membersCount} 筆`;
+  renderAdmin();
+}
+async function saveCfg(patch, okMsg) {
+  try { await backend.setConfig(patch); toast(okMsg || "已儲存"); } catch (e) { toast("儲存失敗：" + e.message); }
+}
+$("cfgVerify").onchange = e => saveCfg({ verify: e.target.checked }, e.target.checked ? "已開啟會員驗證" : "已關閉會員驗證（任何手機都能參加）");
+$("cfgOpen").onchange = e => saveCfg({ open: e.target.checked }, e.target.checked ? "已提前開放" : "已取消提前開放");
+$("cfgPaused").onchange = e => saveCfg({ paused: e.target.checked }, e.target.checked ? "已暫停報名" : "已恢復報名");
+$("cfgSave").onclick = () => {
+  const b = +$("cfgBig").value, s = +$("cfgSmall").value, t = Math.round(+$("cfgTurn").value);
+  if (!(b >= 0 && s >= 0 && b + s <= 100 && t >= 3)) { toast("數值不正確（兩個機率加總需 ≤ 100，秒數 ≥ 3）"); return; }
+  saveCfg({ bigRate: b, smallRate: s, turnSec: t });
+};
+function loadXLSX() {
+  if (window.XLSX) return Promise.resolve(window.XLSX);
+  return new Promise((ok, no) => { const s = document.createElement("script"); s.src = "https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"; s.onload = () => ok(window.XLSX); s.onerror = no; document.head.appendChild(s); });
+}
+$("memImport").onclick = async () => {
+  const mm = $("memMsg"); mm.className = "msg"; mm.textContent = "讀取中…";
+  try {
+    let text = $("memText").value || "";
+    const f = $("memFile").files[0];
+    if (f) {
+      if (/\.xlsx?$/i.test(f.name)) {
+        const X = await loadXLSX(); const wb = X.read(await f.arrayBuffer());
+        for (const n of wb.SheetNames) text += "\n" + X.utils.sheet_to_csv(wb.Sheets[n]);
+      } else text += "\n" + await f.text();
+    }
+    const phones = extractPhones(text);
+    if (!phones.length) { mm.className = "msg err"; mm.textContent = "沒有找到任何手機號碼"; return; }
+    const obj = {}; phones.forEach(p => obj[phoneHash(p)] = true);
+    const keys = Object.keys(obj);
+    for (let i = 0; i < keys.length; i += 500) {
+      const part = {}; keys.slice(i, i + 500).forEach(k => part[k] = true);
+      await backend.importMembers(part); mm.textContent = `匯入中… ${Math.min(i + 500, keys.length)} / ${keys.length}`;
+    }
+    await backend.setConfig({ verify: true }); $("cfgVerify").checked = true;
+    mm.className = "msg ok"; mm.textContent = `已匯入 ${phones.length} 支電話，會員驗證已開啟`;
+    $("memText").value = ""; $("memFile").value = ""; refreshMembers();
+  } catch (e) { mm.className = "msg err"; mm.textContent = "匯入失敗：" + (e.message || e); }
+};
+$("memClear").onclick = async () => {
+  if (!confirm("確定要清空會員名單？清空後若驗證仍開啟，將沒有人能參加。")) return;
+  await backend.clearMembers(); refreshMembers(); toast("名單已清空");
+};
+$("resetBtn").onclick = async () => {
+  const v = prompt("這會刪除所有參加者與拉霸結果。\n確定請輸入 RESET");
+  if (v !== "RESET") return;
+  try { await backend.resetAll(); localStorage.removeItem(MEKEY); me = null; toast("活動資料已重置"); } catch (e) { toast("重置失敗：" + e.message); }
+};
+function adminRows() {
+  return list.map(e => {
+    const r = S.res[e.id], d = S.stock && S.stock.d && S.stock.d[e.id];
+    const p = r ? r.p : null;
+    return { no: joinNo.get(e.id), phone: (priv[e.id] && priv[e.id].ph) || "", l3: e.l3, at: fmtTime(e.at), drawAt: r ? fmtTime(r.at) : "",
+      result: p ? PRIZES[p].name : (d ? "拉霸中" : "排隊中"), big: !!(p && PRIZES[p].big), win: !!(p && p !== "no") };
+  });
+}
+function renderAdmin() {
+  if (!adminOpen) return;
+  const st = S.stock || STOCK0, rows = adminRows();
+  const cnt = {}; Object.values(S.res).forEach(r => cnt[r.p] = (cnt[r.p] || 0) + 1);
+  const bigLeft = BIG_KEYS.reduce((a, k) => a + (st[k] || 0), 0);
+  const stats = [["參加人數", list.length], ["已拉霸", Object.keys(S.res).length], ["排隊中", list.length - Object.keys(S.res).length], ["大獎剩餘", `${bigLeft}/11`],
+    ...BIG_KEYS.slice().reverse().map(k => [PRIZES[k].name, `剩${st[k] ?? "-"}`]), ["1小時券已開", cnt.h1 || 0], ["銘謝惠顧", cnt.no || 0], ["會員名單", membersCount ?? "—"]];
+  $("admStats").innerHTML = stats.map(([k, v]) => `<div class="stat"><div class="k">${k}</div><div class="v">${v}</div></div>`).join("");
+  const c = CFG(), w = [];
+  if (c.verify !== true) w.push("⚠️ 會員驗證目前關閉：任何 09 手機都能參加。");
+  if (c.verify === true && membersCount === 0) w.push("⚠️ 會員驗證已開啟但名單是空的，沒有人能參加！");
+  if (c.open === true) w.push("⚠️ 「提前開放」開啟中。正式開跑前請按「重置活動資料」並取消勾選。");
+  if (!S.stock) w.push("⚠️ 獎項名額尚未初始化（有人開啟頁面後會自動建立），或按一次重置。");
+  if (backend.mode === "demo") w.push("ℹ️ 示範模式：資料只存在這台裝置。");
+  $("admWarn").innerHTML = w.map(x => `<div class="warn">${x}</div>`).join("");
+  const only = $("onlyWin").checked;
+  const show = rows.filter(r => !only || r.win);
+  $("admTable").innerHTML = `<tr><th>#</th><th>會員電話</th><th>參加時間</th><th>結果</th><th>拉霸時間</th></tr>` +
+    (show.length ? show.map(r => `<tr class="${r.big ? "bigw" : ""}"><td>${r.no}</td><td>${esc(r.phone || "（無）")}</td><td>${r.at}</td><td>${r.big ? "🎉 " : ""}${r.result}</td><td>${r.drawAt}</td></tr>`).join("")
+      : `<tr><td colspan="5" style="opacity:.6">尚無資料</td></tr>`);
+}
+$("onlyWin").onchange = renderAdmin;
+function exportRows() {
+  const head = ["參加順序", "會員電話", "手機後三碼", "參加時間", "拉霸結果", "是否大獎", "拉霸時間"];
+  return [head, ...adminRows().map(r => [r.no, r.phone, r.l3, r.at, r.result, r.big ? "是" : "", r.drawAt])];
+}
+function fileStamp() { const d = new Date(), z = n => String(n).padStart(2, "0"); return `${d.getFullYear()}${z(d.getMonth() + 1)}${z(d.getDate())}_${z(d.getHours())}${z(d.getMinutes())}`; }
+function downloadBlob(blob, name) { const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000); }
+$("dlCsv").onclick = () => {
+  const csv = exportRows().map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\r\n");
+  downloadBlob(new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" }), `雙11拉霸結果_${fileStamp()}.csv`);
+};
+$("dlXlsx").onclick = async () => {
+  try {
+    const X = await loadXLSX(); const ws = X.utils.aoa_to_sheet(exportRows());
+    ws["!cols"] = [{ wch: 8 }, { wch: 14 }, { wch: 10 }, { wch: 18 }, { wch: 18 }, { wch: 8 }, { wch: 18 }];
+    const wb = X.utils.book_new(); X.utils.book_append_sheet(wb, ws, "拉霸結果");
+    const buf = X.write(wb, { bookType: "xlsx", type: "array" });
+    downloadBlob(new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }), `雙11拉霸結果_${fileStamp()}.xlsx`);
+  } catch (e) { toast("Excel 產生失敗，改下載 CSV"); $("dlCsv").onclick(); }
+};
+
+/* ---------- boot ---------- */
+$("title").textContent = EVENT.title; $("subtitle").textContent = EVENT.subtitle; document.title = EVENT.title;
+(async () => {
+  try {
+    if (FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.databaseURL) backend = await makeFirebase();
+    else { backend = makeDemo(); $("demoBar").hidden = false; }
+  } catch (e) { showErr("連線失敗，請重新整理頁面。（" + (e.message || e) + "）"); return; }
+  backend.onAuth(isAdm => {
+    if (isAdm && !privUnsub) privUnsub = backend.subscribePrivate(p => { priv = p; renderAdmin(); });
+    if (!isAdm && privUnsub) { try { privUnsub(); } catch (e) { } privUnsub = null; priv = {}; }
+  });
+  backend.subscribe(onData);
+  setInterval(() => { logicTick(); renderTurn(); renderStatus(); if (!me) $("joinBtn").disabled = !isOpenCfg(CFG(), now()); }, 300);
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) runAnim(); });
+})();
+</script>
+</body>
+</html>
