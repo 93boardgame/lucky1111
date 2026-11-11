@@ -5,6 +5,12 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#4a0812">
 <title>雙11 幸運拉霸</title>
+<meta name="description" content="11/11 20:00 開跑！會員限定，每人一次拉霸機會，最大獎儲值金 1111 元。">
+<meta property="og:title" content="雙11 幸運拉霸｜最大獎儲值金 1111 元">
+<meta property="og:description" content="11/11 20:00 開跑！會員限定，每人一次拉霸機會，大獎共 11 名。">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://93boardgame.github.io/lucky1111/">
+<meta name="twitter:card" content="summary">
 <style>
 :root{--gold:#f7c948;--gold2:#ffe9a3;--line:rgba(247,201,72,.35);--card:rgba(255,255,255,.06);--row:74px}
 *{box-sizing:border-box}
@@ -147,7 +153,7 @@ tr.bigw td{background:rgba(247,201,72,.15);font-weight:700}
     <button id="soundBtn" aria-label="音效">🔊</button>
   </header>
 
-  <div id="demoBar" class="bar demo" hidden>⚠️ 示範模式：尚未填入 Firebase 設定，資料只存在這個瀏覽器。可以開多個分頁模擬多人同時參加。</div>
+  <div id="demoBar" class="bar demo" hidden></div>
   <div id="errBar" class="bar err" hidden></div>
 
   <div class="status" id="status"><div class="st">載入中…</div></div>
@@ -983,7 +989,7 @@ $("title").textContent = EVENT.title; $("subtitle").textContent = EVENT.subtitle
 (async () => {
   try {
     if (FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.databaseURL) backend = await makeFirebase();
-    else { backend = makeDemo(); $("demoBar").hidden = false; }
+    else { backend = makeDemo(); $("demoBar").textContent = "⚠️ 示範模式：尚未填入 Firebase 設定，資料只存在這個瀏覽器。"; $("demoBar").hidden = false; }
   } catch (e) { showErr("連線失敗，請重新整理頁面。（" + (e.message || e) + "）"); return; }
   backend.onAuth(isAdm => {
     if (isAdm && !privUnsub) privUnsub = backend.subscribePrivate(p => { priv = p; renderAdmin(); });
